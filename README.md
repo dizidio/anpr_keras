@@ -1,4 +1,4 @@
-# Brazillian License Plate Recognition with Keras
+# License Plate Recognition with Keras
 
 This is a port of Matthew Earl's [work](https://github.com/matthewearl/deep-anpr) to Keras, allowing easier experimentation of new architectures and quick change in training methods.
 
