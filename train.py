@@ -43,7 +43,7 @@ def read_batches(batch_size):
     g = gen.generate_ims()
     def gen_vecs():
         for im, c, p in itertools.islice(g, batch_size):
-            yield im.reshape([1,64,128]), code_to_vec(p, c)
+            yield im.reshape([64,128,1]), code_to_vec(p, c)
     while True:
         yield unzip(gen_vecs())
         
@@ -81,39 +81,44 @@ def lr_schedule(epoch):
 
 
 batch_size = 50
-input_shape = (1, 64, 128)
+input_shape = (64, 128, 1)
 learning_rate = 0.001;
 steps_per_epoch = 500;
 epochs = 1000;
 
-model = Sequential()
-model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', input_shape=input_shape, data_format='channels_first', padding='same'))
-model.add(BatchNormalization())
-#model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-#model.add(Dropout(0.25))
+#model = Sequential()
+#model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', input_shape=input_shape, data_format='channels_first', padding='same'))
+#model.add(BatchNormalization())
+##model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
+#model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+##model.add(Dropout(0.25))#
 
-model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
-model.add(BatchNormalization())
+#model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
+#model.add(BatchNormalization())
 #model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
-model.add(MaxPooling2D(pool_size=(2, 1), strides=(2, 1)))
+#model.add(MaxPooling2D(pool_size=(2, 1), strides=(2, 1)))
 #model.add(Dropout(0.25))
 
-model.add(Conv2D(128, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
-model.add(BatchNormalization())
+#model.add(Conv2D(128, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
+#model.add(BatchNormalization())
 #model.add(Conv2D(128, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+#model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 #model.add(Dropout(0.25))
 
-model.add(Flatten())
-model.add(Dense(2048, activation='relu'))
-model.add(BatchNormalization())
-model.add(Dense(253, activation='sigmoid'))
+#model = keras.applications.mobilenet_v2.MobileNetV2(include_top=True, weights='imagenet', input_shape=(128,128,3), classes=253)
+model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
+model.summary()
+
+
+#model.add(Flatten())
+#model.add(Dense(2048, activation='relu'))
+#model.add(BatchNormalization())
+#model.add(Dense(253, activation='sigmoid'))
 
 model.compile(loss=keras.losses.binary_crossentropy,
               optimizer=keras.optimizers.SGD(lr=0.01, momentum=0.9),
               metrics=['accuracy'])
 
-model.summary()
+#model.summary()
 
 model.fit_generator(read_batches(batch_size),steps_per_epoch=steps_per_epoch, callbacks = [c_test], epochs=epochs, verbose=1)
