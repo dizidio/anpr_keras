@@ -107,6 +107,7 @@ epochs = 1000;
 
 #model = keras.applications.mobilenet_v2.MobileNetV2(include_top=True, weights='imagenet', input_shape=(128,128,3), classes=253)
 model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
+model.layers[-1].activation = keras.activations.sigmoid
 model.summary()
 
 
