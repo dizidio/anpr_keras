@@ -2,7 +2,6 @@ import numpy as np
 import gen
 import itertools
 import cv2
-import itertools
 
 import keras
 from keras.callbacks import LearningRateScheduler
@@ -10,8 +9,18 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, LSTM, BatchNormalization
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
-
+from keras.backend.tensorflow_backend import set_session
 import tensorflow as tf
+import time
+
+np.random.seed(1120)
+
+## LIMIT GPU MEMORY
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.3
+config.gpu_options.visible_device_list = "0"
+set_session(tf.Session(config=config))
+
 
 DIGITS = "0123456789"
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -82,9 +91,9 @@ def lr_schedule(epoch):
 
 batch_size = 50
 input_shape = (64, 128, 1)
-learning_rate = 0.001;
+learning_rate = 0.01;
 steps_per_epoch = 500;
-epochs = 1000;
+epochs = 2;
 
 #model = Sequential()
 #model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', input_shape=input_shape, data_format='channels_first', padding='same'))
@@ -93,33 +102,23 @@ epochs = 1000;
 #model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
 ##model.add(Dropout(0.25))#
 
-#model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
+#model.add(Flatten())
+#model.add(Dense(2048, activation='relu'))
 #model.add(BatchNormalization())
-#model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
-#model.add(MaxPooling2D(pool_size=(2, 1), strides=(2, 1)))
-#model.add(Dropout(0.25))
-
-#model.add(Conv2D(128, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='same'))
-#model.add(BatchNormalization())
-#model.add(Conv2D(128, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding='valid'))
-#model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-#model.add(Dropout(0.25))
+#model.add(Dense(253, activation='sigmoid'))
 
 #model = keras.applications.mobilenet_v2.MobileNetV2(include_top=True, weights='imagenet', input_shape=(128,128,3), classes=253)
 model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
 model.layers[-1].activation = keras.activations.sigmoid
 model.summary()
 
-
-#model.add(Flatten())
-#model.add(Dense(2048, activation='relu'))
-#model.add(BatchNormalization())
-#model.add(Dense(253, activation='sigmoid'))
-
 model.compile(loss=keras.losses.binary_crossentropy,
-              optimizer=keras.optimizers.SGD(lr=0.01, momentum=0.9),
+              optimizer=keras.optimizers.SGD(lr=learning_rate, momentum=0.9),
               metrics=['accuracy'])
 
 #model.summary()
 
 model.fit_generator(read_batches(batch_size),steps_per_epoch=steps_per_epoch, callbacks = [c_test], epochs=epochs, verbose=1)
+
+timestamp = time.strftime("Model%Y%m%d_%H%M%S.h5")
+model.save(timestamp)
