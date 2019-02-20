@@ -12,8 +12,10 @@ from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 import tensorflow as tf
 import time
+import random
 
 np.random.seed(1120)
+random.seed(1120)
 
 ## LIMIT GPU MEMORY
 config = tf.ConfigProto()
@@ -93,7 +95,7 @@ batch_size = 50
 input_shape = (64, 128, 1)
 learning_rate = 0.01;
 steps_per_epoch = 500;
-epochs = 2;
+epochs = 1000;
 
 #model = Sequential()
 #model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', input_shape=input_shape, data_format='channels_first', padding='same'))
