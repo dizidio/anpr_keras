@@ -49,8 +49,6 @@ def code_to_vec(p, code):
     return np.concatenate([[1. if p else 0], c.flatten()])
 
 def letter_probs_to_code(letter_probs):
-    letter_probs = letter_probs[1:]
-    letter_probs = letter_probs.reshape([7, len(CHARS)]);
     return "".join(CHARS[i] for i in np.argmax(letter_probs, axis=1))      
 
 
@@ -71,6 +69,7 @@ for img in imgs_png:
     im_gray = im_gray.reshape([1,64,128,1])
     im_gray = keras.applications.nasnet.preprocess_input(im_gray)
     results = model.predict(im_gray).ravel()
+    results = results[1:].reshape([7,len(CHARS)]);
     code = letter_probs_to_code(results)
     print("Real {} - Pred {}".format(img[-13:-6], code))
     erros_digitos += diff_letters(code, img[-13:-6]);
