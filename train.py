@@ -19,7 +19,7 @@ random.seed(1120)
 
 ## LIMIT GPU MEMORY
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.3
+config.gpu_options.per_process_gpu_memory_fraction = 0.4
 config.gpu_options.visible_device_list = "0"
 set_session(tf.Session(config=config))
 
@@ -52,9 +52,10 @@ def letter_probs_to_code(letter_probs):
 
 def read_batches(batch_size):
     g = gen.generate_ims()
+    pre_processing = keras.applications.nasnet.preprocess_input
     def gen_vecs():
         for im, c, p in itertools.islice(g, batch_size):
-            yield im.reshape([64,128,1]), code_to_vec(p, c)
+            yield pre_processing(255.*im.reshape([64,128,1])), code_to_vec(p, c)
     while True:
         yield unzip(gen_vecs())
         
@@ -93,7 +94,7 @@ def lr_schedule(epoch):
 
 batch_size = 50
 input_shape = (64, 128, 1)
-learning_rate = 0.01;
+learning_rate = 0.0005;
 steps_per_epoch = 500;
 epochs = 1000;
 
@@ -109,18 +110,22 @@ epochs = 1000;
 #model.add(BatchNormalization())
 #model.add(Dense(253, activation='sigmoid'))
 
-#model = keras.applications.mobilenet_v2.MobileNetV2(include_top=True, weights='imagenet', input_shape=(128,128,3), classes=253)
-model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
+model = keras.applications.nasnet.NASNetMobile(input_shape=(64,128,1), include_top=True, weights=None, classes=253)
+
+#model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
+
 model.layers[-1].activation = keras.activations.sigmoid
 model.summary()
 
 model.compile(loss=keras.losses.binary_crossentropy,
-              optimizer=keras.optimizers.SGD(lr=learning_rate, momentum=0.9),
+              optimizer=keras.optimizers.Adam(lr=learning_rate),
               metrics=['accuracy'])
+              
+#reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=20, min_lr=0.0001, verbose=1)
 
-#model.summary()
-
-model.fit_generator(read_batches(batch_size),steps_per_epoch=steps_per_epoch, callbacks = [c_test], epochs=epochs, verbose=1)
+model.fit_generator(read_batches(batch_size), steps_per_epoch=steps_per_epoch, callbacks = [c_test], epochs=epochs, verbose=1)
 
 timestamp = time.strftime("Model%Y%m%d_%H%M%S.h5")
 model.save(timestamp)
+
+print("Model saved at {}".format(timestamp));
