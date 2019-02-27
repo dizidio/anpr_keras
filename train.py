@@ -2,7 +2,7 @@ import numpy as np
 import gen
 import itertools
 import cv2
-
+import os
 import keras
 from keras.callbacks import LearningRateScheduler
 from keras.models import Sequential
@@ -52,7 +52,7 @@ def letter_probs_to_code(letter_probs):
 
 def read_batches(batch_size):
     g = gen.generate_ims()
-    pre_processing = keras.applications.nasnet.preprocess_input
+    pre_processing = keras.applications.mobilenet_v2.preprocess_input
     def gen_vecs():
         for im, c, p in itertools.islice(g, batch_size):
             yield pre_processing(255.*im.reshape([64,128,1])), code_to_vec(p, c)
@@ -66,15 +66,30 @@ class print_codes(keras.callbacks.Callback):
         score_results = self.model.predict(val_batch[0])
         real_scores = val_batch[1];
         for i,j in zip(score_results,real_scores):
-          probs1 = i[1:].reshape([7,36]);
-          probs2 = j[1:].reshape([7,36]);
+          probs1 = i[1:].reshape([7,len(CHARS)]);
+          probs2 = j[1:].reshape([7,len(CHARS)]);
           code1 = letter_probs_to_code(probs1);
           code2 = letter_probs_to_code(probs2);
           erros = erros + diff_letters(code1,code2);
           cont = cont + 7;        
           #print("{:.2f} - {} <-> {} - {}".format(i[0], code1, j[0], code2));
-        print("Acc: {}%".format(100*(cont-erros)/cont));
-        
+        #print("Acc: {}%".format(100*(cont-erros)/cont));
+        path = "./dataset_210618_test/"
+        imgs_png = [f for f in os.listdir(path) if f.endswith('.png')]
+        erros_digitos = 0;
+        total_digitos = 0;
+        for img in imgs_png:
+            im = cv2.imread(path+img)
+            im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+            im_gray = im_gray.reshape([1,64,128,1])
+            im_gray = keras.applications.nasnet.preprocess_input(im_gray)
+            results = model.predict(im_gray).ravel()
+            results = results[1:].reshape([7,len(CHARS)]);
+            code = letter_probs_to_code(results)
+            erros_digitos += diff_letters(code, img[-13:-6]);
+            total_digitos += 7;
+        print("Acc: {}% - Real Acc: {}%".format(100*(cont-erros)/cont, 100*(total_digitos-erros_digitos)/total_digitos));
+            
 
 for x in read_batches(100):
   val_batch = x;
@@ -96,7 +111,7 @@ batch_size = 50
 input_shape = (64, 128, 1)
 learning_rate = 0.0005;
 steps_per_epoch = 500;
-epochs = 1000;
+epochs = 300;
 
 #model = Sequential()
 #model.add(Conv2D(48, kernel_size=(5, 5), strides=(1, 1), activation='relu', input_shape=input_shape, data_format='channels_first', padding='same'))
@@ -110,9 +125,9 @@ epochs = 1000;
 #model.add(BatchNormalization())
 #model.add(Dense(253, activation='sigmoid'))
 
-model = keras.applications.nasnet.NASNetMobile(input_shape=(64,128,1), include_top=True, weights=None, classes=253)
+#model = keras.applications.nasnet.NASNetMobile(input_shape=(64,128,1), include_top=True, weights=None, classes=253)
 
-#model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
+model = keras.applications.mobilenet_v2.MobileNetV2(include_top = True, weights = None, input_shape = (64,128,1), classes=253)
 
 model.layers[-1].activation = keras.activations.sigmoid
 model.summary()
